@@ -18,6 +18,7 @@ data "terraform_remote_state" "ec2" {
 
 module "alb" {
   source                = "../../../terraform_module/terraform-aws-alb"
+  name                  = var.name
   load_balancer_type    = "application"
   vpc_id                = data.terraform_remote_state.vpc.outputs.vpc_id
   subnets               = data.terraform_remote_state.vpc.outputs.public_subnets
@@ -44,6 +45,14 @@ module "alb" {
       targets = {
         my_ec2 = {
           target_id = data.terraform_remote_state.ec2.outputs.application_ec2_id
+          port      = 80
+        }
+        multi_ec2_1 = {
+          target_id = data.terraform_remote_state.ec2.outputs.ec2_multiple.one.id
+          port      = 80
+        },
+        multi_ec2_2 = {
+          target_id = data.terraform_remote_state.ec2.outputs.ec2_multiple.two.id
           port      = 80
         }
       }

@@ -17,7 +17,7 @@ module "vpc" {
   database_subnets = var.database_subnets
   azs              = local.azs
 
-  manage_default_network_acl    = true
+  manage_default_network_acl    = false
   public_dedicated_network_acl  = true
   private_dedicated_network_acl = true
   create_database_subnet_group  = true

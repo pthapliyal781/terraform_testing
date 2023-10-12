@@ -2,8 +2,6 @@ provider "aws" {
   region = var.default_region
 }
 
-
-
 module "backup" {
   source           = "../../../terraform_module/terraform-aws-backup"
   name             = var.name
