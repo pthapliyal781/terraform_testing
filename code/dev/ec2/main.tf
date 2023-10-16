@@ -20,7 +20,11 @@ data "aws_ami" "amazon_linux" {
 }
 
 locals {
-  name = "ex-${basename(path.cwd)}"
+  # name = "ex-${basename(path.cwd)}"
+  name = "dev-ec2"
+  tags = {
+    Name = local.name
+  }
 }
 
 module "application_ec2" {
@@ -57,7 +61,7 @@ module "application_ec2" {
       volume_size = 5
       throughput  = 200
       encrypted   = true
-      kms_key_id  = aws_kms_key.this.arn
+      kms_key_id  = data.aws_kms_alias.aws_ebs.id
       tags = {
         Name       = "my-ebs-block"
         MountPoint = "/mnt/data"
@@ -65,10 +69,16 @@ module "application_ec2" {
     }
   ]
 
+  user_data_base64 = base64encode(file("httpd.sh"))
+  user_data_replace_on_change = true
+
   enable_volume_tags = false
+
 }
 
 
+
+# Configuration for multiple instances
 locals {
   multiple_instances = {
     one = {
@@ -101,7 +111,9 @@ locals {
   }
 }
 
+# Create multiple instances 
 module "multi_ec2" {
+  create = false # don't create any instances
   source                 = "../../../terraform_module/terraform-aws-ec2-instance"
   for_each               = local.multiple_instances
   name                   = "${local.name}-multi-${each.key}"
@@ -121,9 +133,9 @@ module "security_group_alb" {
   name        = "${var.name}-alb"
   description = "Security Group for ALB"
 
-  vpc_id        = data.terraform_remote_state.vpc.outputs.vpc_id
+  vpc_id              = data.terraform_remote_state.vpc.outputs.vpc_id
   ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules = ["http-80-tcp"]
+  ingress_rules       = ["http-80-tcp"]
 
   egress_rules = ["http-80-tcp"]
 
@@ -153,5 +165,46 @@ module "security_group_instance" {
   tags = var.tags
 }
 
+################################################################################
+# KMS Key
+################################################################################
 resource "aws_kms_key" "this" {
+  description = "KMS key for EC2 instance"
 }
+
+data "aws_kms_alias" "aws_ebs" {
+  name  = "alias/aws/ebs"
+}
+
+################################################################################
+# VPC Endpoints for SSM
+################################################################################
+module "vpc_endpoints" {
+  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  version = "~> 5.0"
+
+  vpc_id = data.terraform_remote_state.vpc.outputs.vpc_id
+
+  endpoints = { for service in toset(["ssm", "ssmmessages", "ec2messages"]) :
+    replace(service, ".", "_") =>
+    {
+      service             = service
+      subnet_ids          = data.terraform_remote_state.vpc.outputs.private_subnets
+      private_dns_enabled = true
+      tags                = { Name = "${local.name}-${service}" }
+    }
+  }
+
+  create_security_group      = true
+  security_group_name_prefix = "${local.name}-vpc-endpoints-"
+  security_group_description = "VPC endpoint security group"
+  security_group_rules = {
+    ingress_https = {
+      description = "HTTPS from subnets"
+      cidr_blocks = data.terraform_remote_state.vpc.outputs.private_subnets_cidr_blocks
+    }
+  }
+
+  tags = local.tags
+}
+

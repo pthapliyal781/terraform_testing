@@ -1,0 +1,3 @@
+[submodule "terraform_module/terraform-aws-network-firewall"]
+	path = terraform_module/terraform-aws-network-firewall
+	url = https://github.com/terraform-aws-modules/terraform-aws-network-firewall.git
