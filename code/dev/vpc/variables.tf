@@ -21,6 +21,12 @@ variable "name" {
   default     = ""
 }
 
+variable "super_cidr" {
+  description = "CIDR value that contain all the CIDR's of all the VPC's"
+  type        = string
+  default     = "10.0.0.0/8"
+}
+
 variable "cidr" {
   description = "(Optional) The IPv4 CIDR block for the VPC. CIDR can be explicitly set or it can be derived from IPAM using `ipv4_netmask_length` & `ipv4_ipam_pool_id`"
   type        = string

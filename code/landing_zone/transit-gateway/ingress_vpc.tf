@@ -20,8 +20,8 @@ module "ingress_vpc" {
   public_outbound_acl_rules    = var.ingress_public_outbound_acl_rules
 
   private_dedicated_network_acl = true
-  private_inbound_acl_rules     = var.private_inbound_acl_rules
-  private_outbound_acl_rules    = var.private_outbound_acl_rules
+  private_inbound_acl_rules     = var.ingress_private_inbound_acl_rules
+  private_outbound_acl_rules    = var.ingress_private_outbound_acl_rules
 
 
   # VPC Flow Logs (Cloudwatch log group and IAM role will be created)
@@ -82,33 +82,33 @@ module "ingress_alb_sg" {
 }
 
 
-################################################################################
-# VPC Endpoints for SSM  -- For testing
-################################################################################
-module "vpc_endpoints" {
-  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
-  version = "~> 5.0"
+# ################################################################################
+# # VPC Endpoints for SSM  -- For testing  ===> This needs to be created in seperate VPC where transit gateway exists
+# ################################################################################
+# module "vpc_endpoints" {
+#   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+#   version = "~> 5.0"
 
-  vpc_id = module.ingress_vpc.vpc_id
+#   vpc_id = module.ingress_vpc.vpc_id
 
-  endpoints = { for service in toset(["ssm", "ssmmessages", "ec2messages"]) :
-    replace(service, ".", "_") =>
-    {
-      service             = service
-      subnet_ids          = module.ingress_vpc.private_subnets
-      private_dns_enabled = true
-      tags                = { Name = "${local.name}-${service}" }
-    }
-  }
+#   endpoints = { for service in toset(["ssm", "ssmmessages", "ec2messages"]) :
+#     replace(service, ".", "_") =>
+#     {
+#       service             = service
+#       subnet_ids          = module.ingress_vpc.private_subnets
+#       private_dns_enabled = true
+#       tags                = { Name = "${local.name}-${service}" }
+#     }
+#   }
 
-  create_security_group      = true
-  security_group_name_prefix = "${local.name}-vpc-endpoints-"
-  security_group_description = "VPC endpoint security group"
-  security_group_rules = {
-    ingress_https = {
-      description = "HTTPS from subnets"
-    cidr_blocks = module.ingress_vpc.private_subnets_cidr_blocks }
-  }
+#   create_security_group      = true
+#   security_group_name_prefix = "${local.name}-vpc-endpoints-"
+#   security_group_description = "VPC endpoint security group"
+#   security_group_rules = {
+#     ingress_https = {
+#       description = "HTTPS from subnets"
+#     cidr_blocks = module.ingress_vpc.private_subnets_cidr_blocks }
+#   }
 
-  tags = local.tags
-}
+#   tags = local.tags
+# }

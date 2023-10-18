@@ -97,6 +97,37 @@ variable "ingress_public_outbound_acl_rules" {
   ]
 }
 
+variable "ingress_private_inbound_acl_rules" {
+  description = "Private subnets inbound network ACLs"
+  type        = list(map(string))
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "ingress_private_outbound_acl_rules" {
+  description = "Private subnets outbound network ACLs"
+  type        = list(map(string))
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+
 variable "private_inbound_acl_rules" {
   description = "Private subnets inbound network ACLs"
   type        = list(map(string))
